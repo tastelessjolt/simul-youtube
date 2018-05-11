@@ -10,16 +10,145 @@
 
 <div class="jumbotron text-center">
   <div class="container">
-    <a href="/" class="logo">
-    </a>
-    <h1>Getting Started with Node</h1>
-    <a type="button" class="btn btn-lg btn-primary" href="/"><span class="glyphicon glyphicon-download"></span> Home</a>
+    <h1>Simultaneous Youtube Watching</h1>
+    <div id="ytplayer"></div>
+    <div id="controls">
+      <div style="float: left;">
+        <button id="play" type="button" class="btn btn-primary">
+          <span class="glyphicon glyphicon-play"></span>
+          <span class="glyphicon glyphicon-pause" style="display: none;" ></span>
+        </button>
+      </div>
+      <div style="padding: 6px">
+        <div style="margin-left: 45px; " id="progressBar" class="progress" >
+          <div class="progress-bar" role="progressbar" style="width: 0%; margin-top: 10px" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+
+    <script> 
+      // Load the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/player_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      var clicked;
+      // Controls
+      var pbar = document.getElementsByClassName('progress-bar')[0]
+      var playButton = document.getElementById('play');
+      
+      function play(elem) {
+        pl = elem.getElementsByClassName("glyphicon-play")[0];
+        pa = elem.getElementsByClassName("glyphicon-pause")[0];
+        pa.style.display = "none";
+        pl.style.display = "block";
+      }
+
+      function pause(elem) {
+        pl = elem.getElementsByClassName("glyphicon-play")[0];
+        pa = elem.getElementsByClassName("glyphicon-pause")[0];
+        pl.style.display = "none";
+        pa.style.display = "block";
+      }
+
+      playButton.addEventListener('click', function(e) {
+        if (player == null) {
+          return;
+        }
+        state = player.getPlayerState()
+        clicked = this;
+        console.log(this);
+        pl = this.getElementsByClassName("glyphicon-play")[0];
+        pa = this.getElementsByClassName("glyphicon-pause")[0];
+
+        console.log(state);
+        // playing
+        if (state == 1 || state == 3) {
+          player.pauseVideo();
+          play(this);
+        }
+        // paused
+        else if (state == 2 || state == 0) {
+          player.playVideo();
+          pause(this);
+        }
+      });
+      // Replace the 'ytplayer' element with an <iframe> and
+      // YouTube player after the API code downloads.
+      var player;
+
+      function onPlayerReadyEvent(event) {
+        progressBarLoop(event.target);
+        player.playVideo();
+      }
+
+      function onPlayerStateEvent(event) {
+        state = event.data
+        if (state == YT.PlayerState.ENDED || state == YT.PlayerState.PAUSED) {
+          play (playButton);
+        }
+        else if (state == YT.PlayerState.PLAYING) {
+          pause (playButton);
+        }
+      }
+
+      document.getElementById('progressBar').addEventListener('click', function (e) {
+        var x = e.pageX - this.offsetLeft, // or e.offsetX (less support, though)
+          y = e.pageY - this.offsetTop,  // or e.offsetY
+          clickedValue = x / this.offsetWidth;
+
+        console.log(clickedValue);
+        if (player == null) {
+          return
+        }
+
+        dur = player.getDuration();
+        curr = dur * clickedValue;
+        
+        if ( curr < 0 ) {
+          curr = 0;
+        } 
+        else if (curr > dur) {
+          curr = dur;
+        }
+        player.seekTo(curr, true)
+      });
+
+      function progressBarLoop(player) {
+        setInterval(function () {
+          if (player == null) {
+            return;
+          }
+          pbar.setAttribute('style', "width: " + (player.getCurrentTime() / player.getDuration()) * 100 + "%")
+          progressBarLoop();
+        }, 200);
+      }
+      function onYouTubePlayerAPIReady() {
+        player = new YT.Player('ytplayer', {
+          height: '720',
+          width: '100%',
+          videoId: 'BGVUiMskx_U',
+          playerVars: {
+            controls: 0, 
+            autoplay: 1,
+            disablekb: 1,
+            enablejsapi: 1,
+            rel: 0,
+            modestbranding: 1
+          },
+          events: {
+            onReady: onPlayerReadyEvent,
+            onStateChange: onPlayerStateEvent
+          }
+        });
+      }
+    </script>
+
+    <a type="button" class="btn btn-lg btn-primary" href="/"><span class="glyphicon glyphicon-play-circle"></span> Watch</a>
   </div>
 </div>
 <div class="container">
-    <div class="alert alert-info text-center" role="alert">
-    To deploy your own copy, and learn the fundamentals of the Heroku platform, head over to the <a href="https://devcenter.heroku.com/articles/getting-started-with-nodejs" class="alert-link">Getting Started with Node on Heroku</a> tutorial.
-    </div>
     <hr>
     <div class="row">
         <div class="col-md-6">
@@ -27,9 +156,6 @@
         <div class="col-md-6">
         </div>
     </div> <!-- row -->
-    <div class="alert alert-info text-center" role="alert">
-        Please do work through the Getting Started guide, even if you do know how to build such an application.  The guide covers the basics of working with Heroku, and will familiarize you with all the concepts you need in order to build and deploy your own apps.
-    </div>
 </div>
 
 
