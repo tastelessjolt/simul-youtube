@@ -117,8 +117,18 @@
           }
         });
 
+        socket.on('initstate', function (msg) {
+          if (msg.state == 'play') {
+            player.playVideo();
+          }
+          else if (msg.state == 'pause') {
+            player.playVideo();            
+            player.pauseVideo();
+          }
+        });
+
         progressBarLoop(event.target);
-        player.playVideo();
+        // player.playVideo();
       }
 
       function onPlayerStateEvent(event) {
