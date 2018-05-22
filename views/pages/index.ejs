@@ -25,7 +25,8 @@
         </div>
       </div>
     </div>
-
+    <script src="/socket.io/socket.io.js"></script>
+    
     <script> 
       // Load the IFrame Player API code asynchronously.
       var tag = document.createElement('script');
@@ -65,26 +66,64 @@
         console.log(state);
         // playing
         if (state == 1 || state == 3) {
-          player.pauseVideo();
+          if (socket != null) {
+            socket.emit('state', {state: 'pause'});
+          }
+          // player.pauseVideo();
           play(this);
         }
         // paused
         else if (state == 2 || state == 0) {
-          player.playVideo();
+          if (socket != null) {
+            socket.emit('state', {state: 'play'});
+          }
+          // player.playVideo();
           pause(this);
         }
       });
       // Replace the 'ytplayer' element with an <iframe> and
       // YouTube player after the API code downloads.
       var player;
+      var socket = null;
 
       function onPlayerReadyEvent(event) {
+        console.log ("Player is ready: " + event.target);
+
+        // first ask a nickname
+        socket = io({
+          query: {
+            nickname: 'hg'
+          }
+        });
+
+        socket.on('user connect', function (msg) {
+          console.log ('"' + msg +  '" connected');
+        });
+        
+        socket.on('user disconnect', function (msg) {
+          console.log('"' + msg + '" disconnected');
+        });
+
+        socket.on('position', function (msg) {
+          player.seekTo(msg.position, true);
+        });
+
+        socket.on('state', function(msg) {
+          if (msg.state == 'play') {
+            player.playVideo();
+          }
+          else if (msg.state == 'pause') {
+            player.pauseVideo();
+          }
+        });
+
         progressBarLoop(event.target);
         player.playVideo();
       }
 
       function onPlayerStateEvent(event) {
         state = event.data
+        console.log ("Player state changed to " + state);
         if (state == YT.PlayerState.ENDED || state == YT.PlayerState.PAUSED) {
           play (playButton);
         }
@@ -102,7 +141,7 @@
         if (player == null) {
           return
         }
-
+        
         dur = player.getDuration();
         curr = dur * clickedValue;
         
@@ -112,7 +151,10 @@
         else if (curr > dur) {
           curr = dur;
         }
-        player.seekTo(curr, true)
+        if (socket != null) {
+          socket.emit('position', {position: curr});
+        }
+        // player.seekTo(curr, true);
       });
 
       function progressBarLoop(player) {
